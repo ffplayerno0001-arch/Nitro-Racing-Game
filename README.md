@@ -1,87 +1,137 @@
-import pygame
-import random
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cartoon Car Racer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; background: #333; overflow: hidden; font-family: 'Arial', sans-serif; }
+        canvas { display: block; margin: 0 auto; background: #444; border-left: 10px solid white; border-right: 10px solid white; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 24px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
 
-# 1. Initialize Pygame
-pygame.init()
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreElement = document.getElementById("ui");
 
-# 2. Setup Screen
-WIDTH, HEIGHT = 400, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Car Racing Game")
+        // Match your Python Width/Height
+        canvas.width = 400;
+        canvas.height = 600;
 
-# Colors
-GRAY = (50, 50, 50)
-WHITE = (255, 255, 255)
-RED = (200, 0, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
+        // Game Variables (From your Python code)
+        let player = { x: 175, y: 500, w: 50, h: 80, speed: 5 };
+        let enemy = { x: Math.random() * 300 + 50, y: -100, w: 50, h: 80, speed: 7 };
+        let score = 0;
+        let running = true;
+        let moveLeft = false;
+        let moveRight = false;
 
-# Game Variables
-player_width = 50
-player_height = 80
-player_x = WIDTH // 2 - player_width // 2
-player_y = HEIGHT - 100
-player_speed = 5
+        // Draw a "Cartoon" Car
+        function drawCar(x, y, color, isPlayer) {
+            // Main Body
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(x, y, 50, 80, 10);
+            ctx.fill();
 
-enemy_width = 50
-enemy_height = 80
-enemy_x = random.randint(50, WIDTH - 100)
-enemy_y = -100
-enemy_speed = 7
+            // Windshield
+            ctx.fillStyle = "#87CEEB";
+            ctx.fillRect(x + 5, y + 15, 40, 20);
 
-score = 0
-font = pygame.font.SysFont("Arial", 30)
+            // Wheels
+            ctx.fillStyle = "black";
+            ctx.fillRect(x - 5, y + 10, 8, 15); // Top left
+            ctx.fillRect(x + 47, y + 10, 8, 15); // Top right
+            ctx.fillRect(x - 5, y + 55, 8, 15); // Bottom left
+            ctx.fillRect(x + 47, y + 55, 8, 15); // Bottom right
 
-clock = pygame.time.Clock()
-running = True
+            // Headlights
+            ctx.fillStyle = "yellow";
+            if(isPlayer) {
+                ctx.fillRect(x + 5, y + 5, 10, 5);
+                ctx.fillRect(x + 35, y + 5, 10, 5);
+            } else {
+                ctx.fillRect(x + 5, y + 70, 10, 5);
+                ctx.fillRect(x + 35, y + 70, 10, 5);
+            }
+        }
 
-# 3. Game Loop
-while running:
-    screen.fill(GRAY) # Draw Road
-    
-    # Check for events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        function update() {
+            if (!running) return;
 
-    # 4. Movement / Logic
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player_x > 50:
-        player_x -= player_speed
-    if keys[pygame.K_RIGHT] and player_x < WIDTH - 100:
-        player_x += player_speed
+            // Logic 4: Movement (Keyboard + Touch)
+            if (moveLeft && player.x > 50) player.x -= player.speed;
+            if (moveRight && player.x < canvas.width - 100) player.x += player.speed;
 
-    # Move Enemy
-    enemy_y += enemy_speed
-    if enemy_y > HEIGHT:
-        enemy_y = -enemy_height
-        enemy_x = random.randint(50, WIDTH - 100)
-        score += 1
-        enemy_speed += 0.2 # Make game harder
+            // Move Enemy
+            enemy.y += enemy.speed;
+            if (enemy.y > canvas.height) {
+                enemy.y = -80;
+                enemy.x = Math.random() * (canvas.width - 100) + 50;
+                score++;
+                enemy.speed += 0.2; // Make game harder
+                scoreElement.innerHTML = "Score: " + score;
+            }
 
-    # 5. Collision Detection
-    player_rect = pygame.Rect(player_x, player_y, player_width, player_height)
-    enemy_rect = pygame.Rect(enemy_x, enemy_y, enemy_width, enemy_height)
+            // Logic 5: Collision Detection
+            if (player.x < enemy.x + enemy.w &&
+                player.x + player.w > enemy.x &&
+                player.y < enemy.y + enemy.h &&
+                player.y + player.h > enemy.y) {
+                alert("GAME OVER! Score: " + score);
+                location.reload(); // Restart
+                running = false;
+            }
 
-    if player_rect.colliderect(enemy_rect):
-        print(f"Game Over! Your Score: {score}")
-        running = False
+            draw();
+            requestAnimationFrame(update);
+        }
 
-    # 6. Drawing
-    # Road lines
-    pygame.draw.rect(screen, YELLOW, (WIDTH//2 - 5, 0, 10, HEIGHT))
-    
-    # Draw Player (Blue Car)
-    pygame.draw.rect(screen, BLUE, player_rect)
-    
-    # Draw Enemy (Red Car)
-    pygame.draw.rect(screen, RED, enemy_rect)
+        function draw() {
+            // Draw Road
+            ctx.fillStyle = "#444";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    # Draw Score
-    score_text = font.render(f"Score: {score}", True, WHITE)
-    screen.blit(score_text, (10, 10))
+            // Road Lines (Yellow middle line)
+            ctx.strokeStyle = "yellow";
+            ctx.setLineDash([40, 20]);
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
 
-    pygame.display.update()
-    clock.tick(60) # 60 Frames per second
+            // Draw Cars
+            drawCar(player.x, player.y, "#007bff", true);  // Blue Player
+            drawCar(enemy.x, enemy.y, "#ff4444", false); // Red Enemy
+        }
 
-pygame.quit()
+        // --- Controls for Mobile & Desktop ---
+        window.onkeydown = (e) => {
+            if (e.keyCode == 37) moveLeft = true;
+            if (e.keyCode == 39) moveRight = true;
+        };
+        window.onkeyup = (e) => {
+            if (e.keyCode == 37) moveLeft = false;
+            if (e.keyCode == 39) moveRight = false;
+        };
+
+        // Touch controls for your iPhone
+        canvas.addEventListener("touchstart", (e) => {
+            let touchX = e.touches[0].clientX;
+            if (touchX < window.innerWidth / 2) moveLeft = true;
+            else moveRight = true;
+        });
+        canvas.addEventListener("touchend", () => {
+            moveLeft = false;
+            moveRight = false;
+        });
+
+        update();
+    </script>
+</body>
+</html>
